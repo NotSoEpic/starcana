@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "starlight-arcana",
+	"version": "${version}",
+	"name": "Starlight Arcana",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/starlight-arcana/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+          "dindcrzy.starcana.Starcana"
+		],
+		"client": [
+			"dindcrzy.starcana.StarcanaClient"
+		],
+		"fabric-datagen": [
+			"dindcrzy.starcana.StarcanaDatagen"
+		]
+	},
+	"mixins": [
+		"starlight-arcana.mixins.json",
+		{
+			"config": "starlight-arcana.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.14.19",
+		"minecraft": "~1.19.4",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
