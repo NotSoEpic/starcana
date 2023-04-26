@@ -14,7 +14,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,7 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Objects;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IPlayerData {
@@ -82,7 +80,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IP
             for (Iterator<Constellation> it = Constellations.CONSTELLATION_REGISTRY.stream().iterator(); it.hasNext(); ) {
                 Constellation constellation = it.next();
                 float dot = look.dot(constellation.getSkyVector(world));
-                if (dot > maxdot && !discovered.contains(constellation.getId())) {
+                if (dot > maxdot && !discovered.contains(constellation.getId()) && constellation.isVisible(world)) {
                     con = constellation;
                     maxdot = dot;
                     closest = constellation.getId();

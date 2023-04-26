@@ -2,15 +2,14 @@ package dindcrzy.starcana;
 
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
-import org.joml.*;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import oshi.util.tuples.Pair;
 
-import java.lang.Math;
 import java.util.ArrayList;
 
 public class Constellation {
@@ -19,12 +18,17 @@ public class Constellation {
     public final Vec3d y;
     public final ArrayList<Vec2f> stars = new ArrayList<>();
     public final ArrayList<Pair<Integer, Integer>> connections = new ArrayList<>();
+
+    private final int visibilityTime;
+    private final int visibilityOffset;
     Constellation(Long seed) {
         Random random = Random.create(seed);
         Vec3d posInSky = Helper.randomUnitVector(random);
         this.x = Helper.randomOrthogonalVector(posInSky, random);
         this.y = this.x.crossProduct(posInSky);
         this.posInSky = posInSky.multiply(100);
+        this.visibilityTime = random.nextBetween(100, 300);
+        this.visibilityOffset = random.nextBetween(-200, 200);
     }
 
     // should range from (-1,-1) to (1,1) ideally
@@ -50,8 +54,20 @@ public class Constellation {
         return posInSky.add(x.multiply(rel.x)).add(y.multiply(rel.y));
     }
 
+    // 0 full, 1 - 3 waning, 4 new, 5 - 7 waxing
     public boolean isVisible(int phase) {
-        return true;
+        return phase < 4;
+    }
+
+    public float getVisibility(World world) {
+        return Helper.lerpVisibility(this, world, visibilityTime, visibilityOffset);
+    }
+    public boolean isVisible(World world) {
+        int prePhase = world.getDimension().getMoonPhase(world.getLunarTime() - visibilityTime + visibilityOffset);
+        int postPhase = world.getDimension().getMoonPhase(world.getLunarTime() + visibilityTime + visibilityOffset);
+        boolean inPrePhase = isVisible(prePhase);
+        boolean inPostPhase = isVisible(postPhase);
+        return inPrePhase || inPostPhase;
     }
 
     public Vector3f getSkyVector(World world) {

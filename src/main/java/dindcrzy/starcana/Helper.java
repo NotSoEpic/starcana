@@ -64,9 +64,9 @@ public class Helper {
 
     // the moon phase can change in the middle of the night thanks to 8/9ths speed
     // interpolates visibility so it isn't a jarring jump
-    public static float lerpVisibility(Constellation constellation, World world, int delta) {
-        int prePhase = world.getDimension().getMoonPhase(world.getLunarTime() - delta);
-        int postPhase = world.getDimension().getMoonPhase(world.getLunarTime() + delta);
+    public static float lerpVisibility(Constellation constellation, World world, int delta, int offset) {
+        int prePhase = world.getDimension().getMoonPhase(world.getLunarTime() - delta + offset);
+        int postPhase = world.getDimension().getMoonPhase(world.getLunarTime() + delta + offset);
         boolean inPrePhase = constellation.isVisible(prePhase);
         boolean inPostPhase = constellation.isVisible(postPhase);
         if (inPrePhase && inPostPhase) {
@@ -75,8 +75,15 @@ public class Helper {
         if (!inPrePhase && !inPostPhase) {
             return 0f;
         }
-        // 18000
-        float lerp = world.getLunarTime() - 6000;
-        return 0f;
+        // switches over at 19500
+        /*float lerp = (MathHelper.fractionalPart(
+                (world.getLunarTime() - 19500 + delta) / (delta * 2f) + 0.5f
+        ) - 0.5f) * 200f / 3f;*/
+        float lerp = (Math.floorMod(world.getLunarTime() + offset, 27000) - 19500) / (delta * 2f) + 0.5f;
+        if (!inPostPhase) { // appearing
+            return 1f - lerp;
+        } else { // disappearing
+            return lerp;
+        }
     }
 }

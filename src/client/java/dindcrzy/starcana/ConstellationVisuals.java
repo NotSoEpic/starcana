@@ -4,26 +4,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector3fc;
 import oshi.util.tuples.Pair;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class ConstellationVisuals {
     public static final HashMap<Constellation, Pair<VertexBuffer, VertexBuffer>>
             constellations = new HashMap<>();
-    public static final HashMap<Constellation, Float>
-            visibilityInterpolate = new HashMap<>();
 
     public static Pair<BufferBuilder.BuiltBuffer, BufferBuilder.BuiltBuffer> buildConstellation(Constellation constellation, BufferBuilder buffer) {
         buffer.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
@@ -105,29 +99,30 @@ public class ConstellationVisuals {
         });
     }
 
-    public static void render(Matrix4f viewMatrix, Matrix4f projectionMatrix, ClientWorld world) {
+    public static void render(Matrix4f viewMatrix, Matrix4f projectionMatrix, ClientWorld world, float[] rgba) {
         float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
         ShaderProgram program = GameRenderer.getPositionProgram();
         HashMap<Identifier, Float> vis = ((IClientData)MinecraftClient.getInstance()).getConstellationVisibility();
 
-        int delta = 200;
-
+        float[] rgbA = Arrays.copyOf(rgba, 4);
         for (Constellation key : constellations.keySet()) {
-            float visibility = Helper.lerpVisibility(key, world, delta);
+            float visibility = key.getVisibility(world);
+            if (visibility > 0) {
+                rgbA[3] = rgba[3] * visibility;
+                // rendering stars
+                CHelper.chromaticAberration(0.3f,
+                        constellations.get(key).getA(), viewMatrix, projectionMatrix, program, tick, rgbA);
 
-            // rendering stars
-            CHelper.chromaticAberration(0.3f,
-                    constellations.get(key).getA(), viewMatrix, projectionMatrix, program, tick);
-            float[] rgba = Arrays.copyOf(RenderSystem.getShaderColor(), 4);
-
-            // rendering connection points
-            float visC = vis.getOrDefault(key.getId(), 0f);
-            if (visC > 0) {
-                RenderSystem.setShaderColor(rgba[0], rgba[1], rgba[2], rgba[3] * 0.25f * visC);
-                CHelper.chromaticAberration(0.2f,
-                        constellations.get(key).getB(), viewMatrix, projectionMatrix, program, tick);
-                RenderSystem.setShaderColor(rgba[0], rgba[1], rgba[2], rgba[3]);
+                // rendering connection points
+                float visC = vis.getOrDefault(key.getId(), 0f);
+                if (visC > 0) {
+                    rgbA[3] = rgba[3] * 0.25f * visC * visibility;
+                    CHelper.chromaticAberration(0.2f,
+                            constellations.get(key).getB(), viewMatrix, projectionMatrix, program, tick, rgbA);
+                }
             }
         }
+        // probably not necessary but just to be safe
+        RenderSystem.setShaderColor(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 }

@@ -3,27 +3,20 @@ package dindcrzy.starcana.mixin.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dindcrzy.starcana.CHelper;
 import dindcrzy.starcana.ConstellationVisuals;
-import dindcrzy.starcana.Constellations;
 import dindcrzy.starcana.Helper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,13 +25,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 @Mixin(WorldRenderer.class)
 abstract class WorldRendererMixin {
-	private ArrayList<Identifier> foundConstellations = new ArrayList<>();
-
 	@Shadow private @Nullable ClientWorld world;
 
 	@Inject(method = "<init>", at = @At("TAIL"))
@@ -80,14 +70,18 @@ abstract class WorldRendererMixin {
 	@Redirect(at = @At(value = "INVOKE", ordinal = 1, target = "Lnet/minecraft/client/gl/VertexBuffer;draw(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/client/gl/ShaderProgram;)V"),
 			method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FLnet/minecraft/client/render/Camera;ZLjava/lang/Runnable;)V")
 	private void colouredStars(VertexBuffer instance, Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderProgram program) {
-		float tick = (MinecraftClient.getInstance().getTickDelta() + this.world.getTime()) * 0.001f;
-		CHelper.chromaticAberration(0.3f, instance, viewMatrix, projectionMatrix, program, tick);
-		ConstellationVisuals.render(viewMatrix, projectionMatrix, this.world);
+		assert world != null;
+		float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
+		float[] rgba = Arrays.copyOf(RenderSystem.getShaderColor(), 4);
+		CHelper.chromaticAberration(0.3f, instance, viewMatrix, projectionMatrix,
+				program, tick, rgba);
+		ConstellationVisuals.render(viewMatrix, projectionMatrix, this.world, rgba);
 	}
 
 	@ModifyVariable(name = "matrix4f2", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, ordinal = 2, target = "Lnet/minecraft/client/render/BufferBuilder;begin(Lnet/minecraft/client/render/VertexFormat$DrawMode;Lnet/minecraft/client/render/VertexFormat;)V"),
 	method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FLnet/minecraft/client/render/Camera;ZLjava/lang/Runnable;)V")
 	private Matrix4f changeMoonPos(Matrix4f value, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, Camera camera, boolean bl, Runnable runnable) {
+		assert world != null;
 		matrices.push();
 		// undoing the sun transformation
 		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(this.world.getSkyAngle(tickDelta) * -360.0f));
