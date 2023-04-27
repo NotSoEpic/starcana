@@ -14,8 +14,8 @@ import java.util.HashSet;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin implements IClientData {
-    HashSet<Identifier> foundConstellations = new HashSet<>();
-    HashMap<Identifier, Float> constellationVisibility = new HashMap<>();
+    final HashSet<Identifier> foundConstellations = new HashSet<>();
+    final HashMap<Identifier, Float> constellationVisibility = new HashMap<>();
 
     @Override
     public HashSet<Identifier> getFoundConstellations() {

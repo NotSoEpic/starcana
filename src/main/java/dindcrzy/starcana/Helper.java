@@ -44,46 +44,44 @@ public class Helper {
     }
 
     public static float getMoonAngle(World world) {
-        // 27000 = 24000 * 9 / 8
         double d = getLinearMoonAngle(world.getLunarTime());
         double e = 0.5 - Math.cos(d * Math.PI) / 2.0;
         float moonAngle = (float)(d * 2.0 + e) / 3.0f;
         return moonAngle * 360.0f;
     }
 
-    public static float getLinearSunAngle(Long lunarTime) {
+    public static float getLinearSunAngle(long lunarTime) {
         return (float)MathHelper.fractionalPart((double)lunarTime / 24000.0 - 0.25);
     }
 
-    public static float getLinearMoonAngle(Long lunarTime) {
+    // -750 -> 0.25 = moonrise
+    // 6000 -> 0.5 = up
+    // 12750 -> 0.75 = moonset
+    // -7500 / 19500 -> 0 = down
+    public static float getLinearMoonAngle(long lunarTime) {
         return (float)MathHelper.fractionalPart((double)(lunarTime - 6000) / 27000.0 + 0.5);
     }
-    public static float getMoonTilt(Long lunarTime) {
+    public static float getMoonTilt(long lunarTime) {
         return (float)Math.cos((double) lunarTime * Math.PI * 2.0 / (24000.0 * 9.0)) * 0.05f;
     }
 
-    // the moon phase can change in the middle of the night thanks to 8/9ths speed
-    // interpolates visibility so it isn't a jarring jump
-    public static float lerpVisibility(Constellation constellation, World world, int delta, int offset) {
-        int prePhase = world.getDimension().getMoonPhase(world.getLunarTime() - delta + offset);
-        int postPhase = world.getDimension().getMoonPhase(world.getLunarTime() + delta + offset);
-        boolean inPrePhase = constellation.isVisible(prePhase);
-        boolean inPostPhase = constellation.isVisible(postPhase);
-        if (inPrePhase && inPostPhase) {
-            return 1f;
-        }
-        if (!inPrePhase && !inPostPhase) {
-            return 0f;
-        }
-        // switches over at 19500
-        /*float lerp = (MathHelper.fractionalPart(
-                (world.getLunarTime() - 19500 + delta) / (delta * 2f) + 0.5f
-        ) - 0.5f) * 200f / 3f;*/
-        float lerp = (Math.floorMod(world.getLunarTime() + offset, 27000) - 19500) / (delta * 2f) + 0.5f;
-        if (!inPostPhase) { // appearing
-            return 1f - lerp;
-        } else { // disappearing
-            return lerp;
-        }
+    public static float getMoonVisibility(long lunarTime) {
+        return (float)MathHelper.clamp(
+                Math.sin((getLinearMoonAngle(lunarTime) - 0.25) * Math.PI * 2f),
+                0, 1
+        );
+    }
+    public static int getMoonPhase(long lunarTime) {
+        // 27000 = 24000 * 8 / 9
+        // return (int)(time / 18000L % 8L + 8L) % 8;
+        return (int)(((lunarTime + 7500) / 27000L + 4) % 8L + 8) % 8;
+    }
+
+    // copied straight from ClientWorld.method_23787
+    public static float starAlpha(long lunarTime) {
+        float g = Helper.getLinearSunAngle(lunarTime);
+        float h = 1.0f - (MathHelper.cos((g * ((float)Math.PI * 2))) * 2.0f + 0.25f);
+        h = MathHelper.clamp(h, 0.0f, 1.0f);
+        return h * h * 0.5f;
     }
 }

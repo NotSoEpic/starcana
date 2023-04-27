@@ -62,7 +62,7 @@ public class ConstellationVisuals {
                 buffer.vertex(m2.x, m2.y, m2.z).next();
                 buffer.vertex(p2.x, p2.y, p2.z).next();
             } else {
-                Starcana.LOGGER.warn("Error creating mesh for " + constellation.getTranslationKey() +
+                Starcana.LOGGER.warn("Error creating mesh for " + constellation.getId() +
                         ":\nStar indices " + pair.getA() + ", " + pair.getB() +
                         " are too close (" + rel.length() + ")");
             }
@@ -106,7 +106,7 @@ public class ConstellationVisuals {
 
         float[] rgbA = Arrays.copyOf(rgba, 4);
         for (Constellation key : constellations.keySet()) {
-            float visibility = key.getVisibility(world);
+            float visibility = key.getAlphaFactor(world.getLunarTime());
             if (visibility > 0) {
                 rgbA[3] = rgba[3] * visibility;
                 // rendering stars
