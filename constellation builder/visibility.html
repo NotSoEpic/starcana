@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+    </head>
+    <body>
+        <canvas id="graph" width="1200" height="600" style="border: 1px solid;"></canvas>
+        <div id="phaseDiv">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+            <input type="checkbox" checked="checked" autocomplete="off">
+        </div>
+        <select id="moonVis" autocomplete="off">
+            <option value="">Always</option>
+            <option value="visible">Moon Visible</option>
+            <option value="not_visible">Moon Not Visible</option>
+            <option value="transition">Moon rising / setting</option>
+        </select>
+        <input id="skyX" type="number" min="-1" max="1" value="-1" autocomplete="off">
+        <input id="skyY" type="number" min="-1" max="1" value="0" autocomplete="off">
+        <input id="skyZ" type="number" min="-1" max="1" value="0" autocomplete="off">
+        <button onclick="randomizeVec()">Randomize</button><br>
+        <button onclick="drawGraph(createConstellation())">Graph</button>
+
+        <script src="visibility.js"></script>
+    </body>
+</html>

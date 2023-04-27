@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .code {
+                font-family: monospace, sans-serif;
+                tab-size: 2em;
+            }
+        </style>
+    </head>
+    <body>
+        <button onclick="mode = 'add'">Add</button>
+        <button onclick="mode = 'drag'">Drag</button>
+        <button onclick="mode = 'connect'">Connect</button>
+        <button onclick="mode = 'delete'">Delete</button>
+        <br>
+        <canvas id="chart" width="600" height="600" style="border: 1px solid;"></canvas>
+        <br>
+        <div id="phaseDiv">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+            <input type="checkbox" checked="checked" onchange="genJava()" autocomplete="off">
+        </div>
+        <select id="moonVis" onchange="genJava()" autocomplete="off">
+            <option value="">Always</option>
+            <option value="Constellation.MOON_VISIBILITY.VISIBLE">Moon Visible</option>
+            <option value="Constellation.MOON_VISIBILITY.NOT_VISIBLE">Moon Not Visible</option>
+            <option value="Constellation.MOON_VISIBILITY.TRANSITION">Moon rising / setting</option>
+        </select>
+        <input id="name" type="text" placeholder="name" onchange="genJava()" autocomplete="off">
+        <p>Constant:</p>
+        <p class="code" id="const"></p>
+        <p>Registry:</p>
+        <p class="code" id="registry"></p>
+
+        <script src="code.js"></script>
+    </body>
+</html>
