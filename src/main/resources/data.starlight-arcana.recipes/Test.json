@@ -1,0 +1,9 @@
+{
+  "type": "starcana:arcane_table_recipe",
+  "inputs": [
+    "minecraft:dirt", "minecraft:dirt", "minecraft:dirt",
+    "minecraft:dirt", "minecraft:dirt", "minecraft:dirt",
+    "minecraft:dirt", "minecraft:dirt", "minecraft:dirt"
+  ],
+  "output": "minecraft:diamond"
+}

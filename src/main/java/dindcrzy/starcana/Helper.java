@@ -1,5 +1,8 @@
 package dindcrzy.starcana;
 
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.noise.PerlinNoiseSampler;
@@ -83,5 +86,21 @@ public class Helper {
         float h = 1.0f - (MathHelper.cos((g * ((float)Math.PI * 2))) * 2.0f + 0.25f);
         h = MathHelper.clamp(h, 0.0f, 1.0f);
         return h * h * 0.5f;
+    }
+
+    public static void createPlayerInventory(ScreenHandler handler, PlayerInventory inventory, int xOff, int yOff) {
+        // using accessWideners to save slight amounts of time :blobsunglasses:
+        int m, l;
+        // player inventory
+        for (m = 0; m < 3; ++m) {
+            for (l = 0; l < 9; ++l) {
+                handler.addSlot(new Slot(inventory, l + m * 9 + 9, 8 + l * 18 + xOff, 84 + m * 18 + yOff));
+            }
+        }
+
+        // player hotbar
+        for (m = 0; m < 9; m++) {
+            handler.addSlot(new Slot(inventory, m, 8 + m * 18 + xOff, 142 + yOff));
+        }
     }
 }

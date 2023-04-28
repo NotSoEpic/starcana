@@ -1,8 +1,12 @@
 package dindcrzy.starcana;
 
+import dindcrzy.starcana.advancements.DiscoverConstellationCriterion;
+import dindcrzy.starcana.blocks.ModBlocks;
 import dindcrzy.starcana.commands.Commands;
+import dindcrzy.starcana.items.ModItems;
+import dindcrzy.starcana.recipes.ModRecipes;
 import net.fabricmc.api.ModInitializer;
-
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +20,15 @@ public class Starcana implements ModInitializer {
         return new Identifier("starcana", s);
     }
 
+    public static final DiscoverConstellationCriterion DISCOVER_CONSTELLATION =
+            Criteria.register(new DiscoverConstellationCriterion());
+
     @Override
     public void onInitialize() {
+        ModItems.register();
+        ModBlocks.register();
         Constellations.register();
         Commands.register();
+        ModRecipes.register();
     }
 }

@@ -1,9 +1,9 @@
 package dindcrzy.starcana;
 
+import dindcrzy.starcana.blocks.ModBlocks;
 import dindcrzy.starcana.networking.ConKnowledgeHandler;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.DimensionRenderingRegistry;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
 
 public class StarcanaClient implements ClientModInitializer {
     @Override
@@ -11,5 +11,6 @@ public class StarcanaClient implements ClientModInitializer {
         // called too early, @see WorldRendererMixin
         // ConstellationVisuals.init();
         ConKnowledgeHandler.register();
+        HandledScreens.register(ModBlocks.ARCANE_TABLE_SCREEN_HANDLER, ArcaneTableScreen::new);
     }
 }

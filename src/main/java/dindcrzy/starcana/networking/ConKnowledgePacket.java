@@ -17,6 +17,7 @@ public class ConKnowledgePacket {
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeIdentifier(constellation);
         ServerPlayNetworking.send(player, CON_KNOWLEDGE_ADD_ID, buf);
+        Starcana.DISCOVER_CONSTELLATION.trigger(player, constellation);
     }
 
     public static void del(ServerPlayerEntity player, Identifier constellation) {
