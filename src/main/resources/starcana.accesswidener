@@ -1,2 +1,6 @@
 accessWidener   v1  named
 accessible method net/minecraft/screen/ScreenHandler addSlot (Lnet/minecraft/screen/slot/Slot;)Lnet/minecraft/screen/slot/Slot;
+
+accessible field net/minecraft/client/gl/VertexBuffer drawMode Lnet/minecraft/client/render/VertexFormat$DrawMode;
+accessible method net/minecraft/client/gl/VertexBuffer getIndexType ()Lnet/minecraft/client/render/VertexFormat$IndexType;
+accessible field net/minecraft/client/gl/VertexBuffer indexCount I

@@ -1,6 +1,6 @@
 package dindcrzy.starcana.recipes;
 
-import net.minecraft.inventory.Inventory;
+import dindcrzy.starcana.blocks.ImplementedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.Recipe;
@@ -11,27 +11,34 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
-public abstract class BaseTableRecipe implements Recipe<Inventory> {
+public abstract class BaseTableRecipe implements Recipe<ImplementedInventory> {
     private final DefaultedList<Ingredient> inputs;
     private final ItemStack output;
     private final Identifier id;
     private final int size;
-    public BaseTableRecipe(DefaultedList<Ingredient> inputs, ItemStack output, Identifier id, int size) {
+    private final int starlight;
+    public BaseTableRecipe(DefaultedList<Ingredient> inputs, ItemStack output, Identifier id, int size, int starlight) {
         this.inputs = inputs;
         this.output = output;
         this.id = id;
         this.size = size;
+        this.starlight = starlight;
     }
 
     public DefaultedList<Ingredient> getInputs() {
         return inputs;
     }
+    public int getStarlight() { return starlight; }
+
+    public boolean canCraft(int starlight) {
+        return starlight >= this.starlight;
+    }
 
     @Override
-    public boolean matches(Inventory inventory, World world) {
-        if (inventory.size() != size) return false;
-        for (int i = 0; i < inventory.size(); i++) {
-            if (!inputs.get(i).test(inventory.getStack(i))) {
+    public boolean matches(ImplementedInventory inventory, World world) {
+        if (inventory.size() < size) return false;
+        for (int i = 0; i < size; i++) {
+            if (!getInputs().get(i).test(inventory.getStack(i))) {
                 return false;
             }
         }
@@ -39,7 +46,7 @@ public abstract class BaseTableRecipe implements Recipe<Inventory> {
     }
 
     @Override
-    public ItemStack craft(Inventory inventory, DynamicRegistryManager registryManager) {
+    public ItemStack craft(ImplementedInventory inventory, DynamicRegistryManager registryManager) {
         return ItemStack.EMPTY;
     }
 

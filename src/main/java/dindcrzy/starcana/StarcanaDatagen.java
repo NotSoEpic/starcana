@@ -1,6 +1,7 @@
 package dindcrzy.starcana;
 
 import dindcrzy.starcana.advancements.Advancements;
+import dindcrzy.starcana.blocks.Tables.ArcaneTable.ArcaneTable;
 import dindcrzy.starcana.blocks.ModBlocks;
 import dindcrzy.starcana.items.ModItems;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
@@ -33,6 +34,21 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
 
         @Override
         public void generateTranslations(TranslationBuilder builder) {
+            items(builder);
+            blocks(builder);
+            constellations(builder);
+        }
+
+        private void items(TranslationBuilder builder) {
+            builder.add(ModItems.LUX_WAND, "Lux Wand");
+        }
+
+        private void blocks(TranslationBuilder builder) {
+            builder.add(ModBlocks.ARCANE_TABLE, "Arcane Table");
+            builder.add(ArcaneTable.TITLE.getString(), "Arcane Table");
+        }
+
+        private void constellations(TranslationBuilder builder) {
             add(builder, Constellations.PLUNGER, "Plunger");
             add(builder, Constellations.BOX, "Box");
         }
@@ -50,7 +66,9 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
 
         @Override
         public void generateBlockStateModels(BlockStateModelGenerator blockModelGen) {
-            blockModelGen.registerCubeAllModelTexturePool(ModBlocks.ARCANE_TABLE);
+            blockModelGen.registerSimpleState(ModBlocks.ARCANE_TABLE);
+            // surely there's a better option?
+            blockModelGen.registerParentedItemModel(ModBlocks.ARCANE_TABLE, Starcana.id("block/" + "arcane_table"));
         }
 
         @Override

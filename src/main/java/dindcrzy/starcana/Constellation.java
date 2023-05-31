@@ -11,6 +11,8 @@ import org.joml.Vector3f;
 import oshi.util.tuples.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Constellation {
     public final Vec3d posInSky;
@@ -135,6 +137,21 @@ public class Constellation {
                     Constellations.CONSTELLATION_REGISTRY.getId(this));
         }
         return translationKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Constellation that = (Constellation) o;
+        return phaseGracePeriod == that.phaseGracePeriod && phaseSwitchShift == that.phaseSwitchShift && posInSky.equals(that.posInSky) && x.equals(that.x) && y.equals(that.y) && stars.equals(that.stars) && connections.equals(that.connections) && moonVisibility == that.moonVisibility && Arrays.equals(phaseVisibility, that.phaseVisibility);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(posInSky, x, y, stars, connections, phaseGracePeriod, phaseSwitchShift, moonVisibility);
+        result = 31 * result + Arrays.hashCode(phaseVisibility);
+        return result;
     }
 
     public enum MOON_POSITION {

@@ -16,11 +16,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 public class ConstellationVisuals {
-    public static final HashMap<Constellation, Pair<VertexBuffer, VertexBuffer>>
-            constellations = new HashMap<>();
+    private record IndexData(int starSize, long starIndex, int lineSize, long lineIndex) {}
+    public static final IndexedVertexBuffer starBuffer = new IndexedVertexBuffer();
+    public static final HashMap<Constellation, IndexData> indexData = new HashMap<>();
+    /* public static final HashMap<Constellation, Pair<VertexBuffer, VertexBuffer>>
+            constellations = new HashMap<>(); */
 
-    public static Pair<BufferBuilder.BuiltBuffer, BufferBuilder.BuiltBuffer> buildConstellation(Constellation constellation, BufferBuilder buffer) {
-        buffer.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
+    public static long buildConstellation(Constellation constellation, BufferBuilder buffer, long offset) {
+        long starIndex = offset;
+        int starSize = 0;
+
         Vec3d[] starPos = new Vec3d[constellation.stars.size()];
         Random random = Random.create(473478L);
         for (int i = 0; i < constellation.stars.size(); i++) {
@@ -40,9 +45,13 @@ public class ConstellationVisuals {
                 buffer.vertex(points[p].x, points[p].y, points[p].z).next();
                 buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z).next();
             }
+            starSize += 3 * (points.length - 2);
         }
-        BufferBuilder.BuiltBuffer builtBuffer = buffer.end();
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
+
+        offset += starSize;
+        long lineIndex = offset;
+        int lineSize = 0;
+
         for (Pair<Integer, Integer> pair : constellation.connections) {
             Vec3d pos1 = starPos[pair.getA()];
             Vec3d pos2 = starPos[pair.getB()];
@@ -60,69 +69,73 @@ public class ConstellationVisuals {
                 buffer.vertex(m1.x, m1.y, m1.z).next();
                 buffer.vertex(p1.x, p1.y, p1.z).next();
                 buffer.vertex(m2.x, m2.y, m2.z).next();
+
+                buffer.vertex(m2.x, m2.y, m2.z).next();
                 buffer.vertex(p2.x, p2.y, p2.z).next();
+                buffer.vertex(m1.x, m1.y, m1.z).next();
+
+                lineSize += 6;
             } else {
                 Starcana.LOGGER.warn("Error creating mesh for " + constellation.getId() +
                         ":\nStar indices " + pair.getA() + ", " + pair.getB() +
                         " are too close (" + rel.length() + ")");
             }
         }
-        return new Pair<>(builtBuffer, buffer.end());
-    }
-    public static Pair<VertexBuffer, VertexBuffer>
-            genConBuffers(Constellation constellation, BufferBuilder bufferBuilder) {
-        Pair<BufferBuilder.BuiltBuffer, BufferBuilder.BuiltBuffer> buffers =
-                buildConstellation(constellation, bufferBuilder);
 
-        VertexBuffer buffer1 = new VertexBuffer();
-        buffer1.bind();
-        buffer1.upload(buffers.getA());
-        VertexBuffer.unbind();
-
-        VertexBuffer buffer2 = new VertexBuffer();
-        buffer2.bind();
-        buffer2.upload(buffers.getB());
-        VertexBuffer.unbind();
-        return new Pair<>(buffer1, buffer2);
+        offset += lineSize;
+        indexData.put(constellation, new IndexData(starSize, starIndex, lineSize, lineIndex));
+        return offset;
     }
 
     public static void init() {
+        long offset = 0;
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
-        Constellations.CONSTELLATION_REGISTRY.forEach(constellation -> {
-            if (constellations.containsKey(constellation)) {
-                constellations.get(constellation).getA().close();
-                constellations.get(constellation).getB().close();
-            }
-            bufferBuilder.clear();
-            constellations.put(constellation, genConBuffers(constellation, bufferBuilder));
-        });
+        bufferBuilder.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
+        for (Constellation constellation : Constellations.CONSTELLATION_REGISTRY) {
+            offset = buildConstellation(constellation, bufferBuilder, offset);
+        }
+        starBuffer.bind();
+        starBuffer.upload(bufferBuilder.end());
+        VertexBuffer.unbind();
     }
 
     public static void render(Matrix4f viewMatrix, Matrix4f projectionMatrix, ClientWorld world, float[] rgba) {
         float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
+        starBuffer.bind();
         ShaderProgram program = GameRenderer.getPositionProgram();
         HashMap<Identifier, Float> vis = ((IClientData)MinecraftClient.getInstance()).getConstellationVisibility();
 
         float[] rgbA = Arrays.copyOf(rgba, 4);
-        for (Constellation key : constellations.keySet()) {
+        for (Constellation key : indexData.keySet()) {
             float visibility = key.getAlphaFactor(world.getLunarTime());
             if (visibility > 0) {
+                float visMul = (float)(1 + 0.3 * Math.sin(tick * 40 + (key.hashCode() % 123))); // more twinkle :o
+                visibility *= visMul;
+                IndexData data = indexData.get(key);
+
+                starBuffer.setElementCount(data.starSize);
+                starBuffer.setIndexOffset(data.starIndex);
+
                 rgbA[3] = rgba[3] * visibility;
                 // rendering stars
                 CHelper.chromaticAberration(0.3f,
-                        constellations.get(key).getA(), viewMatrix, projectionMatrix, program, tick, rgbA);
+                        starBuffer, viewMatrix, projectionMatrix, program, tick, rgbA);
 
                 // rendering connection points
                 float visC = vis.getOrDefault(key.getId(), 0f);
                 if (visC > 0) {
+                    starBuffer.setElementCount(data.lineSize);
+                    starBuffer.setIndexOffset(data.lineIndex);
+
                     rgbA[3] = rgba[3] * 0.25f * visC * visibility;
                     CHelper.chromaticAberration(0.2f,
-                            constellations.get(key).getB(), viewMatrix, projectionMatrix, program, tick, rgbA);
+                            starBuffer, viewMatrix, projectionMatrix, program, tick, rgbA);
                 }
             }
         }
         // probably not necessary but just to be safe
         RenderSystem.setShaderColor(rgba[0], rgba[1], rgba[2], rgba[3]);
+        VertexBuffer.unbind();
     }
 }

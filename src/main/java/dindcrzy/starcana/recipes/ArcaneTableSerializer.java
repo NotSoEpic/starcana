@@ -13,13 +13,13 @@ public class ArcaneTableSerializer extends BaseTableSerializer<ArcaneTableRecipe
     @Override
     public ArcaneTableRecipe read(Identifier id, JsonObject obj) {
         BaseTableSerializer.Results results = this.read(obj, ArcaneTableRecipe.size);
-        return new ArcaneTableRecipe(results.inputs(), results.output(), id);
+        return new ArcaneTableRecipe(results.inputs(), results.output(), results.starlight(), id);
     }
 
     @Override
     public ArcaneTableRecipe read(Identifier id, PacketByteBuf buf) {
         BaseTableSerializer.Results results = this.read(buf, ArcaneTableRecipe.size);
-        return new ArcaneTableRecipe(results.inputs(), results.output(), id);
+        return new ArcaneTableRecipe(results.inputs(), results.output(), results.starlight(), id);
     }
 
     @Override

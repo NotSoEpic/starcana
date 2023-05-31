@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dindcrzy.starcana.CHelper;
 import dindcrzy.starcana.ConstellationVisuals;
 import dindcrzy.starcana.Helper;
+import dindcrzy.starcana.IndexedVertexBuffer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -29,6 +30,8 @@ import java.util.Arrays;
 
 @Mixin(WorldRenderer.class)
 abstract class WorldRendererMixin {
+	private final int[] indices = new int[13];
+
 	@Shadow private @Nullable ClientWorld world;
 
 	@Inject(method = "<init>", at = @At("TAIL"))
@@ -36,11 +39,20 @@ abstract class WorldRendererMixin {
 		ConstellationVisuals.init();
 	}
 
+	// https://github.com/SpongePowered/Mixin/issues/137
+	// weird syntax but it works
+	@Redirect(method = "renderStars()V", at = @At(value = "NEW", args="class=net/minecraft/client/gl/VertexBuffer"))
+	private static VertexBuffer specialBuffer() {
+		return new IndexedVertexBuffer();
+	}
+
 	@Redirect(method = "renderStars()V", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/render/WorldRenderer;renderStars(Lnet/minecraft/client/render/BufferBuilder;)Lnet/minecraft/client/render/BufferBuilder$BuiltBuffer;"))
 	private BufferBuilder.BuiltBuffer coolerStars(WorldRenderer instance, BufferBuilder buffer) {
 		Random random = Random.create(238523L);
 		buffer.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
+		int vertices = 0;
+		indices[0] = 0;
 		for (int i = 0; i < 1200; i++) {
 			int gonSides = random.nextBetween(3, 5);
 			if (random.nextDouble() < 0.3) {
@@ -62,8 +74,13 @@ abstract class WorldRendererMixin {
 					buffer.vertex(points[p].x, points[p].y, points[p].z).next();
 					buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z).next();
 				}
+				vertices += 3 * (gonSides - 2);
+			}
+			if (i % 100 == 0 && i > 0) {
+				indices[i / 100] = vertices;
 			}
 		}
+		indices[12] = vertices;
 		return buffer.end();
 	}
 
@@ -73,8 +90,21 @@ abstract class WorldRendererMixin {
 		assert world != null;
 		float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
 		float[] rgba = Arrays.copyOf(RenderSystem.getShaderColor(), 4);
-		CHelper.chromaticAberration(0.3f, instance, viewMatrix, projectionMatrix,
-				program, tick, rgba);
+		if (instance instanceof IndexedVertexBuffer buffer) {
+			float[] rgbA = Arrays.copyOf(rgba, 4);
+			for (int i = 0; i < 12; i++) {
+				float visMul = (float)(1 + 0.4 * Math.sin(tick * (40 + i * 2) + i * 123)); // twinkle :3
+				rgbA[3] = rgba[3] * visMul;
+				buffer.setIndexOffset(indices[i]);
+				buffer.setElementCount(indices[i + 1] - indices[i]);
+				CHelper.chromaticAberration(0.3f, buffer, viewMatrix, projectionMatrix,
+						program, tick, rgbA);
+			}
+		} else {
+			// should never reach here but /shrug
+			CHelper.chromaticAberration(0.3f, instance, viewMatrix, projectionMatrix,
+					program, tick, rgba);
+		}
 		ConstellationVisuals.render(viewMatrix, projectionMatrix, this.world, rgba);
 	}
 

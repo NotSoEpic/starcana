@@ -1,9 +1,9 @@
 package dindcrzy.starcana.blocks;
 
 import dindcrzy.starcana.Starcana;
-import dindcrzy.starcana.blocks.ArcaneTable.ArcaneTable;
-import dindcrzy.starcana.blocks.ArcaneTable.ArcaneTableEntity;
-import dindcrzy.starcana.blocks.ArcaneTable.ArcaneTableScreenHandler;
+import dindcrzy.starcana.blocks.Tables.ArcaneTable.ArcaneTable;
+import dindcrzy.starcana.blocks.Tables.ArcaneTable.ArcaneTableEntity;
+import dindcrzy.starcana.blocks.Tables.ArcaneTable.ArcaneTableScreenHandler;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -17,7 +17,7 @@ import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.screen.ScreenHandlerType;
 
 public class ModBlocks {
-    public static final ArcaneTable ARCANE_TABLE = new ArcaneTable(FabricBlockSettings.of(Material.STONE));
+    public static final ArcaneTable ARCANE_TABLE = new ArcaneTable(FabricBlockSettings.of(Material.STONE).nonOpaque());
     public static final BlockEntityType<ArcaneTableEntity> ARCANE_TABLE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Starcana.id("arcane_table_entity"),
