@@ -59,6 +59,31 @@ function findStarI(pos) {
     }
 }
 
+function connectStars(iA, iB) {
+    if (lines.find(v => 
+            (v.a == iA && v.b == iB) || (v.b == iA && v.a == iB) // a connection is already defined
+            ) == undefined) {
+        lines.push({a: iA, b: iB});
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function closestTo(i, exclude) {
+    let ci = i;
+    let distance = (star1, star2) => star1.x == star2.x && star1.y == star2.y ? 
+            Infinity : 
+            (star1.x - star2.x) ** 2 + (star1.y - star2.y) ** 2;
+    for (let j = 0; j < stars.length; j++) {
+        if ((exclude == undefined || !exclude.includes(j)) && 
+                distance(stars[j], stars[i]) < distance(stars[ci], stars[i])) {
+            ci = j;
+        }
+    }
+    return ci;
+}
+
 canvas.addEventListener('mousedown', e => {
     var x = e.pageX - cLeft,
         y = e.pageY - cTop,
@@ -103,10 +128,7 @@ canvas.addEventListener('mousedown', e => {
         } else {
             let i = findStarI(pos);
             if (i != null && i != target) {
-                if (lines.find(v => 
-                        (v.a == target && v.b == i) || (v.b == target && v.a == i)
-                        ) == undefined) {
-                    lines.push({a: target, b: i});
+                if (connectStars(target, i)) {
                     target = i;
                     found = true;
                 }
@@ -184,5 +206,52 @@ function genJava() {
     constText.innerText = code;
     regisText.innerText = `Registry.register(CONSTELLATION_REGISTRY, Starcana.id("${name}"), ${const_name});`
 }
+
+function reset() {
+    stars = [];
+    mode = "add";
+    lines = [];
+    target = null;
+    for (let e of phaseDiv.children) {
+        e.checked = true;
+    }
+    moonVis.selectedIndex = 0;
+    nameE.value = "";
+    redraw();
+}
+
+function randomize() {
+    reset();
+    for (let i = 0; i < 10; i++) {
+        let x = Math.random() * (w - 100) + 50;
+        let y = Math.random() * (h - 100) + 50;
+        if (stars.find( // tries to find a star closer than 50 units
+                    v => (v.x - x) ** 2 + (v.y - y) ** 2 < 50 * 50
+                ) == undefined) {
+            stars.push({x, y});
+        }
+    }
+    let add = (a, b) => {return {x: a.x + b.x, y: a.y + b.y}};
+    let center = stars.reduce((a, b) => add(a, b), {x: 0, y: 0});
+    center = {x: center.x / stars.length, y: center.y / stars.length};
+    stars.forEach(star => {
+        star.x += w / 2 - center.x;
+        star.y += h / 2 - center.y;
+    })
+    for (let i = 0; i < stars.length; i++) {
+        let closest = closestTo(i);
+        if (!connectStars(i, closest)) {
+            let closest2 = closestTo(i, [closest]);
+            if (!connectStars(i, closest2)) {
+                let closest3 = closestTo(i, [closest, closest2]);
+                connectStars(i, closest3);
+            }
+        }
+    }
+    redraw();
+}
+
+constText.onclick = e => navigator.clipboard.writeText(e.target.innerText);
+regisText.onclick = e => navigator.clipboard.writeText(e.target.innerText);
 
 redraw();

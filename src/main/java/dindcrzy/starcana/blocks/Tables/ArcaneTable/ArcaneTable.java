@@ -88,8 +88,7 @@ public class ArcaneTable extends BlockWithEntity {
                         i++;
                     }
                     if (i > 0) {
-                        ItemStack result = match.get().getOutput();
-                        result.setCount(i);
+                        ItemStack result = match.get().getOutput().copyWithCount(i);
                         ItemEntity e = new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5,
                                 result);
                         world.spawnEntity(e);
