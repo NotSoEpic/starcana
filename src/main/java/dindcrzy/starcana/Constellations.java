@@ -6,7 +6,12 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.SimpleRegistry;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Constellations {
     public static final RegistryKey<Registry<Constellation>> CONSTELLATION =
@@ -23,83 +28,78 @@ public class Constellations {
             .addStar(0.8f, -1f)
             .addStar(0.6f, -0.4f)
             .addConnections(new int[]{0, 1, 2, 3, 4, 5, 1});
-    public static Constellation BOX = new Constellation(2377L)
-            .addStar(-1f, -1f)
-            .addStar(1f, -1f)
-            .addStar(1f, 1f)
-            .addStar(-1f, 1f)
-            .addConnections(new int[]{0, 1, 2, 3, 0});
-    public static Constellation RNG = random(348998L, Constellation.MOON_POSITION.TRANSITION);
-    public static Constellation PHASES = new Constellation(9012L)
-            .addStar(0, 0)
-            .addStar(0.25f, 0.25f)
-            .addStar(0.5f, 0)
-            .addStar(-0.3f, -0.4f)
-            .addStar(-0.8f, -0.5f)
-            .addConnections(new int[]{0, 1, 2})
-            .addConnections(new int[]{1, 3, 4})
-            .setPhaseVisibility(new boolean[]{true, true, false, false, false, false, true, true});
-
-    public static Constellation PHASE_VIS = new Constellation(54390L)
-            .addStar(0.25f, 0.4f)
-            .addStar(0.4f, -0.25f)
-            .addStar(-0.25f, -0.4f)
-            .addStar(-0.4f, 0.25f)
-            .addConnections(new int[]{0, 1, 2, 3, 1})
-            .setPhaseVisibility(new boolean[]{true, false, true, false, true, false, true, false})
-            .setPosVisibility(Constellation.MOON_POSITION.TRANSITION);
-
-    public static Constellation TEST = new Constellation(541978L)
-            .addStar(-0.74f, -0.56f)
-            .addStar(-0.12f, -0.52f)
-            .addStar(0.28f, -0.72f)
-            .addStar(0.40f, -0.34f)
-            .addStar(-0.64f, 0.10f)
-            .addStar(-0.12f, 0.43f)
-            .addStar(-0.63f, 0.85f)
-            .addStar(0.61f, 0.78f)
-            .addConnection(0, 1)
-            .addConnection(1, 4)
-            .addConnection(4, 5)
-            .addConnection(5, 6)
-            .addConnection(7, 5)
-            .addConnection(3, 1)
-            .addConnection(1, 2)
-            .setPhaseVisibility(new boolean[]{false,false,true,true,true,true,false,false})
-            .setPosVisibility(Constellation.MOON_POSITION.VISIBLE);
 
     public static void register() {
         Registry.register(CONSTELLATION_REGISTRY, Starcana.id("plunger"), PLUNGER);
-        Registry.register(CONSTELLATION_REGISTRY, Starcana.id("box"), BOX);
-        Registry.register(CONSTELLATION_REGISTRY, Starcana.id("rng"), RNG);
-        Registry.register(CONSTELLATION_REGISTRY, Starcana.id("phases"), PHASES);
-        Registry.register(CONSTELLATION_REGISTRY, Starcana.id("phase_vis"), PHASE_VIS);
-        Registry.register(CONSTELLATION_REGISTRY, Starcana.id("test"), TEST);
+        for (long i = 0; i < 30; i++) {
+            Registry.register(CONSTELLATION_REGISTRY, Starcana.id(String.valueOf(i)), random(i));
+        }
     }
 
-    public static Constellation random(Long seed, Constellation.MOON_POSITION vis) {
+    private static int closestPosExclude(Vec2f pos, ArrayList<Vec2f> poss, int[] exclude) {
+        float dist = Float.MAX_VALUE;
+        int best = 0;
+        for (int i = 0; i < poss.size(); i++) {
+            int finalI = i;
+            float cur_dist = poss.get(i).distanceSquared(pos);
+            if (Arrays.stream(exclude).noneMatch(v -> v == finalI) && cur_dist < dist) {
+                best = i;
+                dist = cur_dist;
+            }
+        }
+        return best;
+    }
+
+    public static boolean tooClose(Vec3d posInSky) {
+        return Constellations.CONSTELLATION_REGISTRY.stream().anyMatch(constellation -> constellation.posInSky.dotProduct(posInSky) > 95);
+    }
+
+    public static Constellation random(Long seed) {
+        Constellation con = new Constellation(seed);
         Random random = Random.create(seed);
-        Constellation con = new Constellation(seed).setPosVisibility(vis);
-        int innerStars = 0;
-        for (int i = 0; i < 4; i++) {
-            Vec2f candidate = new Vec2f(random.nextFloat() - 0.5f, random.nextFloat() - 0.5f);
-            if (con.stars.stream().noneMatch(
-                    vec -> vec.distanceSquared(candidate) < 0.1)) {
-                con.addStar(candidate.x, candidate.y);
-                innerStars++;
+
+        // star positions + connections
+        ArrayList<Vec2f> stars = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Vec2f pos = new Vec2f(random.nextFloat() * 2f - 1f, random.nextFloat() * 2f - 1f);
+            if (stars.stream().noneMatch(star -> star.distanceSquared(pos) < 0.2 * 0.2)) {
+                stars.add(pos);
+                con.addStar(pos.x, pos.y);
             }
         }
-        for (int i = 0; i < 6; i++) {
-            Vec2f candidate = new Vec2f(random.nextFloat() * 2f - 1f, random.nextFloat() * 2f - 1f);
-            if (con.stars.stream().noneMatch(
-                    vec -> vec.distanceSquared(candidate) < 0.1)) {
-                con.addStar(candidate.x, candidate.y);
+        for (int i = 0; i < stars.size(); i++) {
+            int j = closestPosExclude(stars.get(i), stars, new int[]{i});
+            if (con.connectionExists(i, j)) {
+                int k = closestPosExclude(stars.get(i), stars, new int[]{i, j});
+                if (con.connectionExists(i, k)) {
+                    int l = closestPosExclude(stars.get(i), stars, new int[]{i, j, k});
+                    con.addConnection(i, l);
+                } else {
+                    con.addConnection(i, k);
+                }
+            } else {
+                con.addConnection(i, j);
             }
-        }
-        for (int i = 0; i < innerStars - 1; i++) {
-            con.addConnection(i, i+1);
         }
 
+        List<StarEnergy> energies = new ArrayList<>(StarEnergies.ENERGY_REGISTRY.stream().toList());
+        int energyCount = 3 - (int) Math.sqrt(random.nextBetween(0, 3*3));
+        for (int i = 0; i < energyCount && energies.size() > 0; i++) {
+            StarEnergy option = energies.remove(random.nextInt(energies.size()));
+            con.addEnergy(option, 1 - (float)i / 3);
+        }
+        if (random.nextFloat() < 0.5) {
+            Constellation.MOON_POSITION[] moon_positions = Constellation.MOON_POSITION.values();
+            Constellation.MOON_POSITION position = moon_positions[random.nextInt(moon_positions.length)];
+            con.setPosVisibility(position);
+        }
+        if (random.nextFloat() < 0.5) {
+            boolean[] phases = new boolean[]{true, true, true, true, true, true, true, true};
+            for (int i = random.nextBetween(3, 6); i > 0; i--) {
+                phases[random.nextInt(8)] = false;
+            }
+            con.setPhaseVisibility(phases);
+        }
         return con;
     }
 }

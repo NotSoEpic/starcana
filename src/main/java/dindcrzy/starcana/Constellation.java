@@ -1,5 +1,8 @@
 package dindcrzy.starcana;
 
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
@@ -10,9 +13,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import oshi.util.tuples.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class Constellation {
     public final Vec3d posInSky;
@@ -27,9 +28,14 @@ public class Constellation {
 
     // 0 full, 1 - 3 waning, 4 new, 5 - 7 waxing
     private final boolean[] phaseVisibility = {true, true, true, true, true, true, true, true};
+    public final HashMap<StarEnergy, Float> energies = new HashMap<>();
     Constellation(long seed) {
         Random random = Random.create(seed);
         Vec3d posInSky = Helper.randomUnitVector(random);
+        int tries = 10;
+        while (--tries > 0 && Constellations.tooClose(posInSky)) {
+            posInSky = Helper.randomUnitVector(random);
+        }
         this.x = Helper.randomOrthogonalVector(posInSky, random);
         this.y = posInSky.crossProduct(x);
         this.posInSky = posInSky.multiply(100);
@@ -44,8 +50,15 @@ public class Constellation {
         return this;
     }
 
+    public boolean connectionExists(int i1, int i2) {
+        return connections.stream().anyMatch(
+                pair -> (pair.getA() == i1 && pair.getB() == i2) ||
+                        (pair.getA() == i2 && pair.getB() == i1));
+    }
+
     public Constellation addConnection(int i1, int i2) {
-        connections.add(new Pair<>(i1, i2));
+        if (!connectionExists(i1, i2))
+            connections.add(new Pair<>(i1, i2));
         return this;
     }
 
@@ -63,6 +76,11 @@ public class Constellation {
     }
     public Constellation setPosVisibility(MOON_POSITION vis) {
         this.moonVisibility = vis;
+        return this;
+    }
+
+    public Constellation addEnergy(StarEnergy energy, float strength) {
+        energies.put(energy, strength);
         return this;
     }
 
@@ -122,6 +140,33 @@ public class Constellation {
         return transform.transformPosition(posInSky.normalize().toVector3f());
     }
 
+    public MOON_POSITION getMoonVisibility() {
+        return moonVisibility;
+    }
+
+    public boolean[] getPhaseVisibility() {
+        return Arrays.copyOf(phaseVisibility, phaseVisibility.length);
+    }
+
+    private Vector3f color;
+    public Vector3f getColor() {
+        if (color == null) {
+            color = new Vector3f(0, 0, 0);
+            float weights = 0;
+            for (StarEnergy energy : energies.keySet()) {
+                float weight = energies.get(energy);
+                color.add(energy.color.toVector3f().mul(weight));
+                weights += weight;
+            }
+            if (weights > 0) {
+                color.div(weights);
+            } else {
+                color = new Vector3f(1, 1, 1);
+            }
+        }
+        return color;
+    }
+
     private Identifier id;
     public Identifier getId() {
         if (id == null) {
@@ -133,10 +178,58 @@ public class Constellation {
     private String translationKey;
     public String getTranslationKey() {
         if (translationKey == null) {
-            translationKey = Util.createTranslationKey("constellation",
-                    Constellations.CONSTELLATION_REGISTRY.getId(this));
+            translationKey = Util.createTranslationKey("constellation", getId());
         }
         return translationKey;
+    }
+
+    public Text getFullInfoText(long lunarTime) {
+        MutableText[] phasesText = new MutableText[8];
+        for (int i = 0; i < 8; i++) {
+            if (i == Helper.getMoonPhase(lunarTime)) {
+                phasesText[i] = phaseVisibility[i] ?
+                        Text.literal("✔").formatted(Formatting.GREEN) :
+                        Text.literal("✘").formatted(Formatting.RED);
+            } else {
+                phasesText[i] = phaseVisibility[i] ? Text.literal("✔") : Text.literal("✘");
+            }
+        }
+
+        MutableText energyText = Text.empty().formatted(Formatting.RESET);
+        if (energies.size() > 0) {
+            ArrayList<Map.Entry<StarEnergy, Float>> energiesSorted = new ArrayList<>(energies.entrySet().stream().toList());
+            energiesSorted.sort(
+                    (e1, e2) -> (int) ((e1.getValue() - e2.getValue()) * 100) // ascending
+            );
+            for (int i = energiesSorted.size() - 1; i >= 0; i--) {
+                energyText.append(
+                        Text.translatable(energiesSorted.get(i).getKey().getTranslationKey())
+                                .append(String.format(" (%.2f)", energiesSorted.get(i).getValue()))
+                                .formatted(energiesSorted.get(i).getKey().getTextColor()));
+                if (i != 0) {
+                    energyText.append(Text.literal(", ").formatted(Formatting.RESET));
+                }
+            }
+        } else {
+            energyText.append(Text.literal("None"));
+        }
+
+        return Text.translatable(
+                "starcana.debug.full_constellation",
+                Text.translatable(getTranslationKey()),
+                Text.literal(moonVisibility.toString()).formatted(alphaFactorMoonPos(lunarTime) > 0.1 ?
+                        Formatting.GREEN : Formatting.RED),
+                phasesText[0], phasesText[1], phasesText[2], phasesText[3], phasesText[4], phasesText[5], phasesText[6], phasesText[7],
+                getSkyVector(lunarTime).y > 0 ?
+                        Text.literal("Upper").formatted(Formatting.GREEN) :
+                        Text.literal("Lower").formatted(Formatting.RED),
+                getSkyVector(lunarTime).z > 0 ? "South" : "North",
+                getSkyVector(lunarTime).x > 0 ? "East" : "West",
+                getSkyVector(lunarTime).y > 0 && isVisible(lunarTime) ?
+                        Text.literal("Yes").formatted(Formatting.GREEN) :
+                        Text.literal("No").formatted(Formatting.RED),
+                energyText
+        );
     }
 
     @Override
@@ -158,6 +251,16 @@ public class Constellation {
         BOTH,
         VISIBLE,
         NOT_VISIBLE,
-        TRANSITION
+        TRANSITION;
+
+        @Override
+        public String toString() {
+            return switch (this) {
+                case BOTH -> "Always";
+                case VISIBLE -> "Visible";
+                case NOT_VISIBLE -> "Not Visible";
+                case TRANSITION -> "On Horizon";
+            };
+        }
     }
 }

@@ -27,6 +27,7 @@ public class Starcana implements ModInitializer {
     public void onInitialize() {
         ModItems.register();
         ModBlocks.register();
+        StarEnergies.register();
         Constellations.register();
         Commands.register();
         ModRecipes.register();

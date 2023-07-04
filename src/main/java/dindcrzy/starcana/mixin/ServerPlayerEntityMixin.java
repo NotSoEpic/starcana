@@ -1,20 +1,23 @@
 package dindcrzy.starcana.mixin;
 
 import com.mojang.authlib.GameProfile;
-import dindcrzy.starcana.Constellation;
-import dindcrzy.starcana.Constellations;
-import dindcrzy.starcana.Helper;
-import dindcrzy.starcana.IPlayerData;
+import dindcrzy.starcana.*;
+import dindcrzy.starcana.items.ConstellationNotes;
+import dindcrzy.starcana.items.ModItems;
 import dindcrzy.starcana.networking.ConKnowledgePacket;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -73,56 +76,66 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IP
     }
 
     int stareTimer = 0;
-    Identifier stareId;
+    Constellation stare;
     @Inject(method = "tick", at = @At("TAIL"))
     private void stareDiscover(CallbackInfo ci) {
-        if (isUsingSpyglass() && Helper.starAlpha(world.getLunarTime()) > 0) {
+        if (isUsingSpyglass() &&
+                Helper.starAlpha(world.getLunarTime()) > 0 &&
+                raycastOpaque().getType() == HitResult.Type.MISS) {
             Vector3f look = getRotationVector().toVector3f();
             HashSet<Identifier> discovered = ((IPlayerData)this).getFoundConstellations();
             Constellation con = null;
-            Identifier closest = null;
             float maxDot = 0.992f;
             for (Iterator<Constellation> it = Constellations.CONSTELLATION_REGISTRY.stream().iterator(); it.hasNext(); ) {
                 Constellation constellation = it.next();
-                float dot = look.dot(constellation.getSkyVector(world.getLunarTime()));
-                if (dot > maxDot &&
-                        !discovered.contains(constellation.getId()) &&
-                        constellation.isVisible(world.getLunarTime())) {
-                    if (constellation.getId().equals(stareId) ||
-                            raycastOpaque().getType() == HitResult.Type.MISS) {
+                Pair<Boolean, Float> stareRes = isStaringAt(constellation, look, world.getLunarTime(), maxDot);
+                if (stareRes.getLeft()) {
+                    maxDot = stareRes.getRight();
+                    if (!discovered.contains(constellation.getId()) ||
+                            ConstellationNotes.getConstellation(getStackInHand(Hand.OFF_HAND)) == null) {
                         con = constellation;
-                        maxDot = dot;
-                        closest = constellation.getId();
                     }
                 }
             }
-            if (closest != null) {
-                if (closest.equals(stareId)) {
+            if (con == null) {
+                stareTimer = 0;
+                stare = null;
+            } else {
+                if (!con.equals(stare)) {
+                    stare = con;
+                    stareTimer = 1;
+                } else {
                     if (stareTimer++ > 60) {
-                        ConKnowledgePacket.add((ServerPlayerEntity)(Object)this, stareId);
+                        ConKnowledgePacket.add((ServerPlayerEntity)(Object)this, stare.getId());
                         sendMessageToClient(Text.translatable(
                                 con.getTranslationKey()
-                        ), true);
+                        ).formatted(Formatting.GOLD), true);
+                        ItemStack offhand = getStackInHand(Hand.OFF_HAND);
+                        if (offhand.isOf(ModItems.CONSTELLATION_NOTES) &&
+                                ConstellationNotes.getConstellation(offhand) == null) {
+                            ConstellationNotes.setConstellation(offhand, stare.getId());
+                        }
                         stareTimer = 0;
-                        stareId = null;
+                        stare = null;
                     }
-                } else {
-                    stareId = closest;
-                    stareTimer = 1;
                 }
-            } else {
-                stareTimer = 0;
-                stareId = null;
             }
         } else {
             stareTimer = 0;
-            stareId = null;
+            stare = null;
         }
     }
 
+    private Pair<Boolean, Float> isStaringAt(Constellation constellation, Vector3f look, long lunarTime, float threshold) {
+        float dot = constellation.getSkyVector(lunarTime).dot(look);
+        return new Pair<>(constellation.isVisible(lunarTime) &&
+                dot > threshold, // bigger dot product = closer to constellation
+                dot);
+    }
+
     private BlockHitResult raycastOpaque() {
-        return world.raycast(new BlockStateRaycastContext(getPos(),
-                getPos().add(getRotationVector().multiply(128)),
+        return world.raycast(new BlockStateRaycastContext(getEyePos(),
+                getEyePos().add(getRotationVector().multiply(128)),
                 AbstractBlock.AbstractBlockState::isOpaque)
         );
     }

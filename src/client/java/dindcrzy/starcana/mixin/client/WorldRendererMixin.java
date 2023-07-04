@@ -1,10 +1,7 @@
 package dindcrzy.starcana.mixin.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import dindcrzy.starcana.CHelper;
-import dindcrzy.starcana.ConstellationVisuals;
-import dindcrzy.starcana.Helper;
-import dindcrzy.starcana.IndexedVertexBuffer;
+import dindcrzy.starcana.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -18,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -50,7 +48,7 @@ abstract class WorldRendererMixin {
 			target = "Lnet/minecraft/client/render/WorldRenderer;renderStars(Lnet/minecraft/client/render/BufferBuilder;)Lnet/minecraft/client/render/BufferBuilder$BuiltBuffer;"))
 	private BufferBuilder.BuiltBuffer coolerStars(WorldRenderer instance, BufferBuilder buffer) {
 		Random random = Random.create(238523L);
-		buffer.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
+		buffer.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
 		int vertices = 0;
 		indices[0] = 0;
 		for (int i = 0; i < 1200; i++) {
@@ -69,10 +67,14 @@ abstract class WorldRendererMixin {
 				pos = pos.multiply(100.0);
 				boolean spiky = gonSides > 4 && ((gonSides & 1) == 0) && random.nextFloat() < 0.4;
 				Vec3d[] points = Helper.genStarVectors(x, y, pos, gonSides, spiky);
+				Vector3f color = Helper.starColor(random);
 				for (int p = 1; p < gonSides - 1; p++) {
-					buffer.vertex(points[0].x, points[0].y, points[0].z).next();
-					buffer.vertex(points[p].x, points[p].y, points[p].z).next();
-					buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z).next();
+					buffer.vertex(points[0].x, points[0].y, points[0].z);
+					buffer.color(color.x, color.y, color.z, 1f).next();
+					buffer.vertex(points[p].x, points[p].y, points[p].z);
+					buffer.color(color.x, color.y, color.z, 1f).next();
+					buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z);
+					buffer.color(color.x, color.y, color.z, 1f).next();
 				}
 				vertices += 3 * (gonSides - 2);
 			}
@@ -98,12 +100,12 @@ abstract class WorldRendererMixin {
 				buffer.setIndexOffset(indices[i]);
 				buffer.setElementCount(indices[i + 1] - indices[i]);
 				CHelper.chromaticAberration(0.3f, buffer, viewMatrix, projectionMatrix,
-						program, tick, rgbA);
+						GameRenderer.getPositionColorProgram(), tick, rgbA);
 			}
 		} else {
 			// should never reach here but /shrug
 			CHelper.chromaticAberration(0.3f, instance, viewMatrix, projectionMatrix,
-					program, tick, rgba);
+					GameRenderer.getPositionColorProgram(), tick, rgba);
 		}
 		ConstellationVisuals.render(viewMatrix, projectionMatrix, this.world, rgba);
 	}

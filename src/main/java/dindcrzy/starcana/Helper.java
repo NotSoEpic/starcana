@@ -1,6 +1,7 @@
 package dindcrzy.starcana;
 
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.MathHelper;
@@ -9,6 +10,8 @@ import net.minecraft.util.math.noise.PerlinNoiseSampler;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.joml.Vector3f;
+
+import java.util.Optional;
 
 public class Helper {
     // https://math.stackexchange.com/questions/2347215/how-to-find-a-random-unit-vector-orthogonal-to-a-random-unit-vector-in-3d
@@ -35,6 +38,17 @@ public class Helper {
             );
         }
         return points;
+    }
+
+    public static Vector3f starColor(Random random) {
+        if (random.nextFloat() < 0.33) {
+            return new Vector3f(1, 1, 1);
+        }
+        Optional<RegistryEntry.Reference<StarEnergy>> optional = StarEnergies.ENERGY_REGISTRY.getRandom(random);
+        if (optional.isPresent()) {
+            return optional.get().value().color.toVector3f().add(1, 1, 1).mul(0.5f);
+        }
+        return new Vector3f(1, 1, 1);
     }
 
     private static final PerlinNoiseSampler noise = new PerlinNoiseSampler(Random.create(185434L));

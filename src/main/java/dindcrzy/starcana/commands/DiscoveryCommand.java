@@ -3,8 +3,6 @@ package dindcrzy.starcana.commands;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import dindcrzy.starcana.Constellations;
-import dindcrzy.starcana.IPlayerData;
-import dindcrzy.starcana.Starcana;
 import dindcrzy.starcana.networking.ConKnowledgePacket;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.IdentifierArgumentType;

@@ -10,6 +10,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import oshi.util.tuples.Pair;
 
 import java.util.Arrays;
@@ -26,13 +27,14 @@ public class ConstellationVisuals {
         long starIndex = offset;
         int starSize = 0;
 
+        Vector3f color = constellation.getColor();
         Vec3d[] starPos = new Vec3d[constellation.stars.size()];
         Random random = Random.create(473478L);
         for (int i = 0; i < constellation.stars.size(); i++) {
             Vec3d pos = constellation.starPos(i, 12f); // separation
             Vec3d pn = pos.normalize();
             double sMul = 0.9 + random.nextFloat() * 0.2;
-            Vec3d x = Helper.randomOrthogonalVector(pn, random).multiply(0.75 * sMul); // star size
+            Vec3d x = Helper.randomOrthogonalVector(pn, random).multiply(0.55 * sMul); // star size
             Vec3d y = pn.crossProduct(x);
             starPos[i] = pos;
             int gonSides = random.nextBetween(3, 10);
@@ -41,9 +43,12 @@ public class ConstellationVisuals {
                     x, y, pos,
                     gonSides, spiky);
             for (int p = 1; p < points.length - 1; p++) {
-                buffer.vertex(points[0].x, points[0].y, points[0].z).next();
-                buffer.vertex(points[p].x, points[p].y, points[p].z).next();
-                buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z).next();
+                buffer.vertex(points[0].x, points[0].y, points[0].z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(points[p].x, points[p].y, points[p].z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(points[p+1].x, points[p+1].y, points[p+1].z);
+                buffer.color(color.x, color.y, color.z, 1).next();
             }
             starSize += 3 * (points.length - 2);
         }
@@ -66,13 +71,19 @@ public class ConstellationVisuals {
                 Vec3d p2 = pos2.subtract(x.multiply(1));
                 Vec3d m1 = pos1.add(rel.multiply(0.5).add(y.multiply(w)));
                 Vec3d m2 = pos1.add(rel.multiply(0.5).subtract(y.multiply(w)));
-                buffer.vertex(m1.x, m1.y, m1.z).next();
-                buffer.vertex(p1.x, p1.y, p1.z).next();
-                buffer.vertex(m2.x, m2.y, m2.z).next();
+                buffer.vertex(m1.x, m1.y, m1.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(p1.x, p1.y, p1.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(m2.x, m2.y, m2.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
 
-                buffer.vertex(m2.x, m2.y, m2.z).next();
-                buffer.vertex(p2.x, p2.y, p2.z).next();
-                buffer.vertex(m1.x, m1.y, m1.z).next();
+                buffer.vertex(m2.x, m2.y, m2.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(p2.x, p2.y, p2.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
+                buffer.vertex(m1.x, m1.y, m1.z);
+                buffer.color(color.x, color.y, color.z, 1).next();
 
                 lineSize += 6;
             } else {
@@ -91,7 +102,7 @@ public class ConstellationVisuals {
         long offset = 0;
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
-        bufferBuilder.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION);
+        bufferBuilder.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
         for (Constellation constellation : Constellations.CONSTELLATION_REGISTRY) {
             offset = buildConstellation(constellation, bufferBuilder, offset);
         }
@@ -103,7 +114,7 @@ public class ConstellationVisuals {
     public static void render(Matrix4f viewMatrix, Matrix4f projectionMatrix, ClientWorld world, float[] rgba) {
         float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
         starBuffer.bind();
-        ShaderProgram program = GameRenderer.getPositionProgram();
+        ShaderProgram program = GameRenderer.getPositionColorProgram();
         HashMap<Identifier, Float> vis = ((IClientData)MinecraftClient.getInstance()).getConstellationVisibility();
 
         float[] rgbA = Arrays.copyOf(rgba, 4);

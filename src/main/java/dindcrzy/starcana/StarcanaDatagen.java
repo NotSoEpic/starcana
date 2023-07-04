@@ -36,11 +36,25 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
         public void generateTranslations(TranslationBuilder builder) {
             items(builder);
             blocks(builder);
+            energies(builder);
             constellations(builder);
+
+            // because java edition is well-made, color is reset when formatting is applied
+            builder.add("starcana.debug.full_constellation", """
+                    
+                    §e§lConstellation:§r %s
+                    
+                    Moon Position:§r %s
+                    Phase:§r (full) - %s§r (waning) - %s§r %s§r %s§r (new) - %s§r (waxing) - %s§r %s§r %s§r
+                    Quadrant:§r %s %s %s
+                    Visible:§r %s
+                    
+                    §lEnergies:§r %s""");
         }
 
         private void items(TranslationBuilder builder) {
             builder.add(ModItems.LUX_WAND, "Lux Wand");
+            builder.add(ModItems.CONSTELLATION_NOTES, "Constellation Notes");
         }
 
         private void blocks(TranslationBuilder builder) {
@@ -48,9 +62,21 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
             builder.add(ArcaneTable.TITLE.getString(), "Arcane Table");
         }
 
+        private void energies(TranslationBuilder builder) {
+            add(builder, StarEnergies.POWERFUL, "Powerful");
+            add(builder, StarEnergies.DESTRUCTIVE, "Destructive");
+            add(builder, StarEnergies.NATURAL, "Natural");
+        }
+
         private void constellations(TranslationBuilder builder) {
+            builder.add("constellation.starcana.0", "Test Constellation 0");
+            builder.add("constellation.starcana.1", "Test Constellation 1");
+            builder.add("constellation.starcana.2", "Test Constellation 2");
             add(builder, Constellations.PLUNGER, "Plunger");
-            add(builder, Constellations.BOX, "Box");
+        }
+
+        private void add(TranslationBuilder builder, StarEnergy energy, String s) {
+            builder.add(energy.getTranslationKey(), s);
         }
 
         private void add(TranslationBuilder builder, Constellation constellation, String s) {
@@ -74,6 +100,7 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
         @Override
         public void generateItemModels(ItemModelGenerator itemModelGen) {
             itemModelGen.register(ModItems.LUX_WAND, Models.GENERATED);
+            itemModelGen.register(ModItems.CONSTELLATION_NOTES, Models.GENERATED);
         }
     }
 
