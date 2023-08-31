@@ -14,13 +14,13 @@ public class ConKnowledgeHandler {
         ClientPlayNetworking.registerGlobalReceiver(ConKnowledgePacket.CON_KNOWLEDGE_ADD_ID,
             ((client, handler, buf, responseSender) -> {
                 Identifier id = readPacket(buf);
-                ((IClientData)client).getFoundConstellations().add(id);
+                ((IClientData)client).starcana$getFoundConstellations().add(id);
             })
         );
         ClientPlayNetworking.registerGlobalReceiver(ConKnowledgePacket.CON_KNOWLEDGE_DEL_ID,
             ((client, handler, buf, responseSender) -> {
                 Identifier id = readPacket(buf);
-                ((IClientData)client).getFoundConstellations().remove(id);
+                ((IClientData)client).starcana$getFoundConstellations().remove(id);
             })
         );
     }

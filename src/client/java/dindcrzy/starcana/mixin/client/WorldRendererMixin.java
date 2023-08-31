@@ -18,6 +18,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -28,7 +29,7 @@ import java.util.Arrays;
 
 @Mixin(WorldRenderer.class)
 abstract class WorldRendererMixin {
-	private final int[] indices = new int[13];
+	@Unique private final int[] indices = new int[13];
 
 	@Shadow private @Nullable ClientWorld world;
 

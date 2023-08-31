@@ -26,12 +26,14 @@ import net.minecraft.world.World;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IPlayerData {
@@ -39,15 +41,15 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IP
 
     @Shadow protected abstract void consumeItem();
 
-    private static final String FOUND_KEY = "FoundConstellations";
-    public final HashSet<Identifier> foundConstellations = new HashSet<>();
+    @Unique private static final String FOUND_KEY = "FoundConstellations";
+    @Unique public final HashSet<Identifier> foundConstellations = new HashSet<>();
 
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
     }
 
     @Override
-    public HashSet<Identifier> getFoundConstellations() {
+    public HashSet<Identifier> starcana$getFoundConstellations() {
         return foundConstellations;
     }
 
@@ -75,65 +77,96 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IP
         }
     }
 
-    int stareTimer = 0;
-    Constellation stare;
+    @Unique int stareTimer = 0;
+    @Unique Constellation stare;
+    @Unique boolean moon = false;
     @Inject(method = "tick", at = @At("TAIL"))
     private void stareDiscover(CallbackInfo ci) {
         if (isUsingSpyglass() &&
                 Helper.starAlpha(world.getLunarTime()) > 0 &&
                 raycastOpaque().getType() == HitResult.Type.MISS) {
             Vector3f look = getRotationVector().toVector3f();
-            HashSet<Identifier> discovered = ((IPlayerData)this).getFoundConstellations();
-            Constellation con = null;
             float maxDot = 0.992f;
+
+            Vector3f moonPos = Helper.getMoonVec(world.getLunarTime());
+            Pair<Boolean, Float> moonStare = isStaringAt(moonPos, look, maxDot);
+            boolean moo = false;
+            if (moonStare.getLeft()) {
+                maxDot = moonStare.getRight();
+                moo = true;
+            }
+
+            HashSet<Identifier> discovered = ((IPlayerData)this).starcana$getFoundConstellations();
+            Constellation con = null;
             for (Iterator<Constellation> it = Constellations.CONSTELLATION_REGISTRY.stream().iterator(); it.hasNext(); ) {
                 Constellation constellation = it.next();
                 Pair<Boolean, Float> stareRes = isStaringAt(constellation, look, world.getLunarTime(), maxDot);
                 if (stareRes.getLeft()) {
                     maxDot = stareRes.getRight();
+                    moo = false;
                     if (!discovered.contains(constellation.getId()) ||
-                            ConstellationNotes.getConstellation(getStackInHand(Hand.OFF_HAND)) == null) {
+                            ConstellationNotes.getConstellationId(getStackInHand(Hand.OFF_HAND)) == null) {
                         con = constellation;
                     }
                 }
             }
-            if (con == null) {
+            if (con == null && !moo) {
                 stareTimer = 0;
                 stare = null;
+                moon = false;
             } else {
-                if (!con.equals(stare)) {
+                if (!Objects.equals(con, stare) || moo != moon) {
                     stare = con;
+                    moon = moo;
                     stareTimer = 1;
                 } else {
                     if (stareTimer++ > 60) {
-                        ConKnowledgePacket.add((ServerPlayerEntity)(Object)this, stare.getId());
-                        sendMessageToClient(Text.translatable(
-                                con.getTranslationKey()
-                        ).formatted(Formatting.GOLD), true);
                         ItemStack offhand = getStackInHand(Hand.OFF_HAND);
-                        if (offhand.isOf(ModItems.CONSTELLATION_NOTES) &&
-                                ConstellationNotes.getConstellation(offhand) == null) {
-                            ConstellationNotes.setConstellation(offhand, stare.getId());
+                        if (moon) {
+                            sendMessageToClient(Text.translatable(
+                                    ConstellationNotes.MOON_KEY
+                            ).formatted(Formatting.GOLD), true);
+                            if (offhand.isOf(ModItems.CONSTELLATION_NOTES) &&
+                                    ConstellationNotes.getConstellationId(offhand) == null) {
+                                ConstellationNotes.setConstellation(offhand, ConstellationNotes.MOON_ID);
+                            }
+                        } else {
+                            ConKnowledgePacket.add((ServerPlayerEntity) (Object) this, stare.getId());
+                            sendMessageToClient(Text.translatable(
+                                    con.getTranslationKey()
+                            ).formatted(Formatting.GOLD), true);
+                            if (offhand.isOf(ModItems.CONSTELLATION_NOTES) &&
+                                    ConstellationNotes.getConstellationId(offhand) == null) {
+                                ConstellationNotes.setConstellation(offhand, stare.getId());
+                            }
                         }
                         stareTimer = 0;
                         stare = null;
+                        moon = false;
                     }
                 }
             }
         } else {
             stareTimer = 0;
             stare = null;
+            moon = false;
         }
     }
 
-    private Pair<Boolean, Float> isStaringAt(Constellation constellation, Vector3f look, long lunarTime, float threshold) {
-        float dot = constellation.getSkyVector(lunarTime).dot(look);
-        return new Pair<>(constellation.isVisible(lunarTime) &&
-                dot > threshold, // bigger dot product = closer to constellation
-                dot);
+   @Unique private Pair<Boolean, Float> isStaringAt(Vector3f pos, Vector3f look, float threshold) {
+       float dot = pos.normalize().dot(look);
+       return new Pair<>(dot > threshold, dot); // bigger dot product = closer to constellation
+   }
+
+    @Unique private Pair<Boolean, Float> isStaringAt(Constellation constellation, Vector3f look, long lunarTime, float threshold) {
+        Pair<Boolean, Float> res = isStaringAt(constellation.getSkyVector(lunarTime), look, threshold);
+        return new Pair<>(
+                constellation.isVisible(lunarTime) && res.getLeft(),
+                res.getRight()
+        );
     }
 
-    private BlockHitResult raycastOpaque() {
+    @Unique private BlockHitResult raycastOpaque() {
         return world.raycast(new BlockStateRaycastContext(getEyePos(),
                 getEyePos().add(getRotationVector().multiply(128)),
                 AbstractBlock.AbstractBlockState::isOpaque)

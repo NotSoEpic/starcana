@@ -94,6 +94,16 @@ public class Helper {
         return (int)(((lunarTime + 7500) / 27000L + 4) % 8L + 8) % 8;
     }
 
+    public static Vector3f getMoonVec(long lunarTime) {
+        float moonAngle = (float) -((Helper.getLinearMoonAngle(lunarTime)) * Math.PI * 2f);
+        float moonTilt = (float) (Helper.getMoonTilt(lunarTime) * Math.PI * 2f);
+        return new Vector3f(
+                (float) -Math.sin(moonAngle),
+                (float) -Math.cos(moonAngle),
+                (float) Math.sin(moonTilt)
+        );
+    }
+
     // copied straight from ClientWorld.method_23787
     public static float starAlpha(long lunarTime) {
         float g = Helper.getLinearSunAngle(lunarTime);

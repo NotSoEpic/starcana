@@ -5,6 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -14,15 +15,15 @@ import java.util.HashSet;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin implements IClientData {
-    final HashSet<Identifier> foundConstellations = new HashSet<>();
-    final HashMap<Identifier, Float> constellationVisibility = new HashMap<>();
+    @Unique final HashSet<Identifier> foundConstellations = new HashSet<>();
+    @Unique final HashMap<Identifier, Float> constellationVisibility = new HashMap<>();
 
     @Override
-    public HashSet<Identifier> getFoundConstellations() {
+    public HashSet<Identifier> starcana$getFoundConstellations() {
         return foundConstellations;
     }
     @Override
-    public HashMap<Identifier, Float> getConstellationVisibility() {
+    public HashMap<Identifier, Float> starcana$getConstellationVisibility() {
         return constellationVisibility;
     }
 

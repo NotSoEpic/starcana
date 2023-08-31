@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class PlayerManagerMixin {
     @Inject(method = "onPlayerConnect", at = @At("TAIL"))
     private void sendLearntConstellations(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
-        for(Identifier id : ((IPlayerData)player).getFoundConstellations()) {
+        for(Identifier id : ((IPlayerData)player).starcana$getFoundConstellations()) {
             ConKnowledgePacket.add(player, id);
         }
     }

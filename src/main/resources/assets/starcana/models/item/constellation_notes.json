@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "starcana:item/constellation_notes"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "notes": 1
+      },
+      "model": "starcana:item/constellation_notes_filled"
+    }
+  ]
+}

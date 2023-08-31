@@ -13,7 +13,7 @@ public class ConKnowledgePacket {
     public static final Identifier CON_KNOWLEDGE_DEL_ID = Starcana.id("con_knowledge_del");
 
     public static void add(ServerPlayerEntity player, Identifier constellation) {
-        ((IPlayerData) player).getFoundConstellations().add(constellation);
+        ((IPlayerData) player).starcana$getFoundConstellations().add(constellation);
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeIdentifier(constellation);
         ServerPlayNetworking.send(player, CON_KNOWLEDGE_ADD_ID, buf);
@@ -21,7 +21,7 @@ public class ConKnowledgePacket {
     }
 
     public static void del(ServerPlayerEntity player, Identifier constellation) {
-        ((IPlayerData) player).getFoundConstellations().remove(constellation);
+        ((IPlayerData) player).starcana$getFoundConstellations().remove(constellation);
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeIdentifier(constellation);
         ServerPlayNetworking.send(player, CON_KNOWLEDGE_DEL_ID, buf);

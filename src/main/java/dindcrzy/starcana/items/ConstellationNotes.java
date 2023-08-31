@@ -20,14 +20,22 @@ import java.util.List;
 
 public class ConstellationNotes extends Item {
     public static final String CONSTELLATION_KEY = "Constellation";
+    public static final Identifier MOON_ID = new Identifier("moon");
+    public static final String MOON_KEY = "minecraft.moon";
     public ConstellationNotes(Settings settings) {
         super(settings);
     }
 
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
-        Identifier id = getConstellation(stack);
-        if (id != null) {
+        Identifier id = getConstellationId(stack);
+        if (MOON_ID.equals(id)) {
+            // its called "Lunar Notes"... don't need to say it twice lol
+            // tooltip.add(Text.translatable(MOON_KEY).formatted(Formatting.AQUA));
+            if (context.isAdvanced()) {
+                tooltip.add(Text.literal(MOON_ID.toString()).formatted(Formatting.GRAY));
+            }
+        } else if (id != null) {
             Constellation constellation = Constellations.CONSTELLATION_REGISTRY.get(id);
             if (constellation != null) {
                 tooltip.add(Text.translatable(constellation.getTranslationKey()).formatted(Formatting.AQUA));
@@ -41,8 +49,13 @@ public class ConstellationNotes extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        Identifier id = getConstellation(user.getStackInHand(hand));
-        if (id != null) {
+        Identifier id = getConstellationId(user.getStackInHand(hand));
+        if (MOON_ID.equals(id)) {
+            if (world.isClient()) {
+                user.sendMessage(Text.of("THE MOON"));
+            }
+            return TypedActionResult.success(user.getStackInHand(hand), world.isClient());
+        } else if (id != null) {
             // doesnt work, its clientside only stuff :(
             // user.client.setScreen(new NotesScreen());
             Constellation constellation = Constellations.CONSTELLATION_REGISTRY.get(id);
@@ -68,7 +81,7 @@ public class ConstellationNotes extends Item {
     }
 
     @Nullable
-    public static Identifier getConstellation(ItemStack notes) {
+    public static Identifier getConstellationId(ItemStack notes) {
         if (notes.isOf(ModItems.CONSTELLATION_NOTES)) {
             NbtCompound nbt = notes.getOrCreateNbt();
             if (nbt.contains(CONSTELLATION_KEY, NbtElement.STRING_TYPE)) {
@@ -76,5 +89,17 @@ public class ConstellationNotes extends Item {
             }
         }
         return null;
+    }
+
+    @Override
+    public String getTranslationKey(ItemStack stack) {
+        Identifier id = getConstellationId(stack);
+        if (MOON_ID.equals(id)) {
+            return super.getTranslationKey(stack) + ".moon";
+        }
+        if (id != null) {
+            return super.getTranslationKey(stack) + ".stars";
+        }
+        return super.getTranslationKey(stack);
     }
 }

@@ -115,7 +115,7 @@ public class ConstellationVisuals {
         float tick = (MinecraftClient.getInstance().getTickDelta() + world.getTime()) * 0.001f;
         starBuffer.bind();
         ShaderProgram program = GameRenderer.getPositionColorProgram();
-        HashMap<Identifier, Float> vis = ((IClientData)MinecraftClient.getInstance()).getConstellationVisibility();
+        HashMap<Identifier, Float> vis = ((IClientData)MinecraftClient.getInstance()).starcana$getConstellationVisibility();
 
         float[] rgbA = Arrays.copyOf(rgba, 4);
         for (Constellation key : indexData.keySet()) {

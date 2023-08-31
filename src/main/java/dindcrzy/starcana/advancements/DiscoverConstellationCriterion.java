@@ -82,7 +82,7 @@ public class DiscoverConstellationCriterion extends AbstractCriterion<DiscoverCo
             } else if (constellation != null) {
                 return id.equals(constellation);
             } else {
-                return ((IPlayerData)player).getFoundConstellations().size() >= count;
+                return ((IPlayerData)player).starcana$getFoundConstellations().size() >= count;
             }
         }
 

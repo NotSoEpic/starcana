@@ -3,6 +3,7 @@ package dindcrzy.starcana;
 import dindcrzy.starcana.advancements.Advancements;
 import dindcrzy.starcana.blocks.Tables.ArcaneTable.ArcaneTable;
 import dindcrzy.starcana.blocks.ModBlocks;
+import dindcrzy.starcana.items.ConstellationNotes;
 import dindcrzy.starcana.items.ModItems;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
@@ -50,11 +51,14 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
                     Visible:§r %s
                     
                     §lEnergies:§r %s""");
+            builder.add(ConstellationNotes.MOON_KEY, "Moon");
         }
 
         private void items(TranslationBuilder builder) {
             builder.add(ModItems.LUX_WAND, "Lux Wand");
-            builder.add(ModItems.CONSTELLATION_NOTES, "Constellation Notes");
+            builder.add(ModItems.CONSTELLATION_NOTES.getTranslationKey() + ".moon", "Lunar Notes");
+            builder.add(ModItems.CONSTELLATION_NOTES.getTranslationKey() + ".stars", "Constellation Notes");
+            builder.add(ModItems.CONSTELLATION_NOTES, "Celestial Paper");
         }
 
         private void blocks(TranslationBuilder builder) {
@@ -94,13 +98,13 @@ public class StarcanaDatagen implements DataGeneratorEntrypoint {
         public void generateBlockStateModels(BlockStateModelGenerator blockModelGen) {
             blockModelGen.registerSimpleState(ModBlocks.ARCANE_TABLE);
             // surely there's a better option?
-            blockModelGen.registerParentedItemModel(ModBlocks.ARCANE_TABLE, Starcana.id("block/" + "arcane_table"));
+            blockModelGen.registerParentedItemModel(ModBlocks.ARCANE_TABLE, Starcana.id("block/arcane_table"));
         }
 
         @Override
         public void generateItemModels(ItemModelGenerator itemModelGen) {
             itemModelGen.register(ModItems.LUX_WAND, Models.GENERATED);
-            itemModelGen.register(ModItems.CONSTELLATION_NOTES, Models.GENERATED);
+            // itemModelGen.register(ModItems.CONSTELLATION_NOTES, Models.GENERATED); // uses model with predicate
         }
     }
 
